@@ -38,6 +38,9 @@
 #include <linux/mmu_context.h>
 #include <linux/module.h>
 #include <linux/nmi.h>
+#include <linux/rcupdate_wait.h>
+#include <linux/compiler.h>
+#include <linux/frame.h>
 #include <linux/prefetch.h>
 #include <linux/irq.h>
 #include <linux/cpufreq_times.h>
