@@ -35,7 +35,6 @@
 *****************************************************************************/
 #include "../focaltech_core.h"
 #include "../focaltech_flash.h"
-#include <linux/wakelock.h>
 #include <linux/timer.h>
 
 /*****************************************************************************
@@ -46,7 +45,7 @@
 /*****************************************************************************
 * Global variable or extern global variabls/functions
 *****************************************************************************/
-struct wake_lock ps_lock;
+struct wakeup_source ps_lock;
 
 #define FTS_DEBUG_UPGRADE(fmt, args...) do{\
 					                            printk(KERN_ERR "[FTS][UPGRADE]:##############################################################################\n");\
@@ -141,9 +140,9 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	static int uc_ErrorTimes = 0;
 	static int uc_UpgradeTimes = 0;
 
-	wake_lock_init(&ps_lock, WAKE_LOCK_SUSPEND, "tp_wakelock");
+	wakeup_source_init(&ps_lock, "tp_wakelock");
 
-	wake_lock(&ps_lock);
+	__pm_stay_awake(&ps_lock);
 
 	/* (FTS_GET_VENDOR_ID_NUM == 0) */
 	g_fw_file = CTPM_FW;
@@ -172,7 +171,7 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	}
 	while (uc_UpgradeTimes < (FTS_UPGRADE_TEST_NUMBER));
 
-	wake_unlock(&ps_lock);
+	__pm_relax(&ps_lock);
 
 	return 0;
 }
