@@ -2834,6 +2834,18 @@ static const u32 __accumulated_sum_N32[] = {
 	46011, 46376, 46559, 46650, 46696, 46719,
 };
 
+static inline int per_task_boost(struct task_struct *p)
+{
+	if (p->boost_period) {
+		if (sched_clock() > p->boost_expires) {
+			p->boost_period = 0;
+			p->boost_expires = 0;
+			p->boost = 0;
+		}
+	}
+	return p->boost;
+}
+
 /*
  * Approximate:
  *   val * y^n,    where y^32 ~= 0.5 (~1 scheduling period)
@@ -6292,9 +6304,20 @@ static inline bool task_fits_max(struct task_struct *p, int cpu)
 {
 	unsigned long capacity = capacity_orig_of(cpu);
 	unsigned long max_capacity = cpu_rq(cpu)->rd->max_cpu_capacity.val;
+	unsigned long task_boost = per_task_boost(p);
 
 	if (capacity == max_capacity)
 		return true;
+
+	if (is_min_capacity_cpu(cpu)) {
+		if (task_boost_policy(p) == SCHED_BOOST_ON_BIG ||
+				task_boost > 0 ||
+				schedtune_task_boost(p) > 0)
+			return false;
+	} else { /* mid cap cpu */
+		if (task_boost > 1)
+			return false;
+	}
 
 	if (task_boost_policy(p) == SCHED_BOOST_ON_BIG)
 		return false;
@@ -6976,6 +6999,7 @@ struct find_best_target_env {
 static unsigned long cpu_estimated_capacity(int cpu, struct task_struct *p)
 {
 	unsigned long tutil, estimated_capacity;
+	unsigned long task_boost = per_task_boost(p);
 
 	if (task_in_cum_window_demand(cpu_rq(cpu), p))
 		tutil = 0;
@@ -7586,7 +7610,7 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 	schedstat_inc(this_rq()->eas_stats.secb_attempts);
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
-	boosted = schedtune_task_boost(p) > 0;
+	boosted = (schedtune_task_boost(p) > 0 || per_task_boost(p) > 0);
 	prefer_idle = schedtune_prefer_idle(p) > 0;
 #else
 	boosted = get_sysctl_sched_cfs_boost() > 0;

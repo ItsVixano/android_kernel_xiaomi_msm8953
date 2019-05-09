@@ -532,6 +532,7 @@ extern void schedule_preempt_disabled(void);
 
 extern long io_schedule_timeout(long timeout);
 
+extern int set_task_boost(int boost, u64 period);
 static inline void io_schedule(void)
 {
 	io_schedule_timeout(MAX_SCHEDULE_TIMEOUT);
@@ -1717,8 +1718,12 @@ struct task_struct {
 	const struct sched_class *sched_class;
 	struct sched_entity se;
 	struct sched_rt_entity rt;
-	u64 last_sleep_ts;
+	u64				 last_sleep_ts;
 	u64 last_cpu_selected_ts;
+
+	int				boost;
+	u64				boost_period;
+	u64				boost_expires;
 #ifdef CONFIG_SCHED_WALT
 	struct ravg ravg;
 	/*
