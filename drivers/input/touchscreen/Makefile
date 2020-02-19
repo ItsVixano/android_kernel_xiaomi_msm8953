@@ -112,6 +112,7 @@ obj-$(CONFIG_TOUCHSCREEN_RAYDIUM_CHIPSET)  += raydium_wt030/
 
 # common
 obj-$(CONFIG_TOUCHSCREEN_FT5435_MI)	+= ft5435_mi/
+obj-$(CONFIG_TOUCHSCREEN_COMMON)	+= tp_common.o
 
 # tissot
 obj-$(CONFIG_TOUCHSCREEN_FT8716_D2)	+= ft8716_d2/
