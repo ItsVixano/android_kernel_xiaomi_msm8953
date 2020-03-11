@@ -52,8 +52,6 @@
 #include <linux/oom.h>
 #include <linux/smpboot.h>
 #include <linux/jiffies.h>
-#include <linux/sched/isolation.h>
-#include <linux/sched/clock.h>
 #include "../time/tick-internal.h"
 
 #include "tree.h"
@@ -515,15 +513,6 @@ unsigned long rcu_exp_batches_completed(void)
 	return rcu_state.expedited_sequence;
 }
 EXPORT_SYMBOL_GPL(rcu_exp_batches_completed);
-
-/*
- * Force a quiescent state.
- */
-void rcu_force_quiescent_state(void)
-{
-	force_quiescent_state();
-}
-EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
 
 /*
  * Return the root node of the rcu_state structure.
@@ -1643,7 +1632,7 @@ static void rcu_gp_fqs_loop(void)
 				       READ_ONCE(rcu_state.gp_seq),
 				       TPS("fqswait"));
 		rcu_state.gp_state = RCU_GP_WAIT_FQS;
-		ret = swait_event_idle_timeout_exclusive(
+		ret = swait_event_idle_timeout(
 				rcu_state.gp_wq, rcu_gp_fqs_check_wake(&gf), j);
 		rcu_state.gp_state = RCU_GP_DOING_FQS;
 		/* Locking provides needed memory barriers. */
