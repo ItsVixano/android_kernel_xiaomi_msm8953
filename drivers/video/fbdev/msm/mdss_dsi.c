@@ -48,10 +48,12 @@ static struct mdss_dsi_data *mdss_dsi_res;
 #define DSI_DISABLE_PC_LATENCY 100
 #define DSI_ENABLE_PC_LATENCY PM_QOS_DEFAULT_VALUE
 
-#ifdef CONFIG_MACH_XIAOMI_VINCE
+#ifdef CONFIG_ENABLE_PM_TP_SUSPEND_RESUME
 /*A flag to indicate ffbm mode or not*/
 bool lcm_ffbm_mode = 0;
+#endif
 
+#ifdef CONFIG_MACH_XIAOMI_VINCE
 struct mdss_dsi_ctrl_pdata *change_par_ctrl;
 
 static struct NVT_CSOT_ESD nvt_csot_esd = {
@@ -3129,7 +3131,7 @@ static struct device_node *mdss_dsi_find_panel_of_node(
 			 __func__, __LINE__);
 		goto end;
 	} else {
-#ifdef CONFIG_MACH_XIAOMI_VINCE
+#ifdef CONFIG_ENABLE_PM_TP_SUSPEND_RESUME
 		lcm_ffbm_mode = strnstr(panel_cfg, "ffbm", len);
 #endif
 		/* check if any override parameters are set */
