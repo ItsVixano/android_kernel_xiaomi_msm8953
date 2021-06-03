@@ -219,7 +219,7 @@ static void set_dload_mode(int on)
 	return;
 }
 
-#if CONFIG_MACH_XIAOMI_TISSOT
+#if !((defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY))
 static void enable_emergency_dload_mode(void)
 {
 	pr_err("dload mode is not enabled on target\n");

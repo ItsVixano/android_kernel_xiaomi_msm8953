@@ -239,7 +239,7 @@ enum fg_mem_data_index {
 
 static struct fg_mem_setting settings[FG_MEM_SETTING_MAX] = {
 	/*       ID                    Address, Offset, Value*/
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
+#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 	SETTING(SOFT_COLD,       0x454,   0,      150),
 	SETTING(SOFT_HOT,        0x454,   1,      450),
 	SETTING(HARD_COLD,       0x454,   2,      0),
@@ -257,7 +257,7 @@ static struct fg_mem_setting settings[FG_MEM_SETTING_MAX] = {
 	SETTING(CHG_TERM_CURRENT, 0x4F8,   2,      250),
 	SETTING(IRQ_VOLT_EMPTY,	 0x458,   3,      3100),
 	SETTING(CUTOFF_VOLTAGE,	 0x40C,   0,      3200),
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
+#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 	SETTING(VBAT_EST_DIFF,	 0x000,   0,      200),
 #else
 	SETTING(VBAT_EST_DIFF,	 0x000,   0,      30),
@@ -343,7 +343,7 @@ module_param_named(
 	battery_type, fg_batt_type, charp, 00600
 );
 
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
+#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 static int fg_sram_update_period_ms = 3000;
 #else
 static int fg_sram_update_period_ms = 30000;
@@ -2041,7 +2041,7 @@ static void fg_handle_battery_insertion(struct fg_chip *chip)
 }
 
 
-#ifndef CONFIG_MACH_XIAOMI_TISSOT
+#if !((defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY))
 static int soc_to_setpoint(int soc)
 {
 	return DIV_ROUND_CLOSEST(soc * 255, 100);
@@ -4652,6 +4652,8 @@ static int fg_power_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 #ifdef CONFIG_MACH_XIAOMI_TISSOT
 		val->intval = 3080000;
+#elif (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
+		val->intval = 4000000;
 #else
 		val->intval = chip->nom_cap_uah;
 #endif
@@ -4659,6 +4661,8 @@ static int fg_power_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
 #ifdef CONFIG_MACH_XIAOMI_TISSOT
 		val->intval = 3080000;
+#elif (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
+		val->intval = 4000000;
 #else
 		val->intval = chip->learning_data.learned_cc_uah;
 #endif
@@ -8066,7 +8070,7 @@ static int fg_common_hw_init(struct fg_chip *chip)
 		}
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
+#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 	rc = fg_mem_masked_write(chip, settings[FG_MEM_DELTA_SOC].address, 0xFF, 1,
 			settings[FG_MEM_DELTA_SOC].offset);
 #else
