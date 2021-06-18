@@ -1469,4 +1469,8 @@ source "drivers/input/touchscreen/vituralsar_e7/Kconfig"
 source "drivers/input/touchscreen/ft5446_sakura/Kconfig"
 source "drivers/input/touchscreen/gt917d_sakura/Kconfig"
 
+# ysl
+source "drivers/input/touchscreen/ft5446_e6/Kconfig"
+source "drivers/input/touchscreen/gt917d_e6/Kconfig"
+
 endif

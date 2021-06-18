@@ -126,3 +126,8 @@ obj-$(CONFIG_TOUCHSCREEN_VITURALSAR_E7)	+= vituralsar_e7/
 # sakura
 obj-$(CONFIG_TOUCHSCREEN_GT917D_SAKURA)	+= gt917d_sakura/
 obj-$(CONFIG_TOUCHSCREEN_FT5446_SAKURA)	+= ft5446_sakura/
+
+# ysl
+obj-$(CONFIG_TOUCHSCREEN_FT5446_E6)	+= ft5446_e6/
+obj-$(CONFIG_TOUCHSCREEN_GT917D_E6)	+= gt917d_e6/
+obj-$(CONFIG_MACH_XIAOMI_YSL)		+= lct_tp_fm_info_e6.o
