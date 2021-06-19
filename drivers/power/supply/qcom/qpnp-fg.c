@@ -345,6 +345,8 @@ module_param_named(
 
 #if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 static int fg_sram_update_period_ms = 3000;
+#elif CONFIG_MACH_XIAOMI_YSL
+static int fg_sram_update_period_ms = 30000 / 3;
 #else
 static int fg_sram_update_period_ms = 30000;
 #endif
@@ -4650,7 +4652,7 @@ static int fg_power_get_property(struct power_supply *psy,
 			val->intval = 1;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
+#if defined (CONFIG_MACH_XIAOMI_TISSOT) | defined (CONFIG_MACH_XIAOMI_YSL)
 		val->intval = 3080000;
 #elif (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 		val->intval = 4000000;
@@ -4659,7 +4661,7 @@ static int fg_power_get_property(struct power_supply *psy,
 #endif
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
+#if defined (CONFIG_MACH_XIAOMI_TISSOT) | defined (CONFIG_MACH_XIAOMI_YSL)
 		val->intval = 3080000;
 #elif (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 		val->intval = 4000000;

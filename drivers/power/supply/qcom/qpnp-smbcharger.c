@@ -114,6 +114,9 @@ struct smbchg_chip {
 	u8				revision[4];
 
 	/* configuration parameters */
+#ifdef CONFIG_MACH_XIAOMI_YSL
+	int				cool_xiaomi;
+#endif
 	int				iterm_ma;
 	int				usb_max_current_ma;
 	int				typec_current_ma;
@@ -208,6 +211,9 @@ struct smbchg_chip {
 	bool				batt_hot;
 	bool				batt_cold;
 	bool				batt_warm;
+#ifdef CONFIG_MACH_XIAOMI_YSL
+	bool				batt_cool_xiaomi;
+#endif
 	bool				batt_cool;
 	unsigned int			thermal_levels;
 	unsigned int			therm_lvl_sel;
@@ -1142,6 +1148,10 @@ static int get_prop_batt_health(struct smbchg_chip *chip)
 		return POWER_SUPPLY_HEALTH_COLD;
 	else if (chip->batt_warm)
 		return POWER_SUPPLY_HEALTH_WARM;
+#ifdef CONFIG_MACH_XIAOMI_YSL
+	else if (chip->batt_cool_xiaomi)
+		return POWER_SUPPLY_HEALTH_COOL_XIAOMI;
+#endif
 	else if (chip->batt_cool)
 		return POWER_SUPPLY_HEALTH_COOL;
 	else
@@ -4157,7 +4167,11 @@ static int smbchg_register_chg_led(struct smbchg_chip *chip)
 {
 	int rc;
 
+#ifdef CONFIG_MACH_XIAOMI_YSL
+	chip->led_cdev.name = "green";
+#else
 	chip->led_cdev.name = "red";
+#endif
 	chip->led_cdev.brightness_set = smbchg_chg_led_brightness_set;
 	chip->led_cdev.brightness_get = smbchg_chg_led_brightness_get;
 
@@ -6092,7 +6106,7 @@ static int smbchg_battery_get_property(struct power_supply *psy,
 		val->intval = get_prop_batt_health(chip);
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
-#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
+#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_YSL)
 		val->intval = POWER_SUPPLY_TECHNOLOGY_LIPO;
 #else
 		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
@@ -8208,6 +8222,7 @@ static int smbchg_check_chg_version(struct smbchg_chip *chip)
 	return 0;
 }
 
+#ifndef CONFIG_MACH_XIAOMI_YSL
 static void rerun_hvdcp_det_if_necessary(struct smbchg_chip *chip)
 {
 	enum power_supply_type usb_supply_type;
@@ -8256,6 +8271,7 @@ static void rerun_hvdcp_det_if_necessary(struct smbchg_chip *chip)
 		}
 	}
 }
+#endif
 
 static int smbchg_probe(struct platform_device *pdev)
 {
@@ -8422,6 +8438,11 @@ static int smbchg_probe(struct platform_device *pdev)
 	chip->typec_psy = typec_psy;
 	chip->fake_battery_soc = -EINVAL;
 	chip->usb_online = -EINVAL;
+#ifdef CONFIG_MACH_XIAOMI_YSL
+	chip->batt_cool_xiaomi = false;
+	chip->batt_warm = false;
+	chip->batt_cool = false;
+#endif
 	dev_set_drvdata(&pdev->dev, chip);
 
 	spin_lock_init(&chip->sec_access_lock);
@@ -8585,7 +8606,9 @@ static int smbchg_probe(struct platform_device *pdev)
 		goto unregister_led_class;
 	}
 
+#ifndef CONFIG_MACH_XIAOMI_YSL
 	rerun_hvdcp_det_if_necessary(chip);
+#endif
 
 	update_usb_status(chip, is_usb_present(chip), false);
 	dump_regs(chip);
