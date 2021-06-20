@@ -3721,7 +3721,9 @@ Output:
 static int __init goodix_ts_init(void)
 {
 	s32 ret;
+	#if 0
 	extern int tpselect;
+	#endif
 	GTP_DEBUG_FUNC();
 	GTP_INFO("GTP driver installing....");
 	goodix_wq = create_singlethread_workqueue("goodix_wq");
@@ -3735,11 +3737,13 @@ static int __init goodix_ts_init(void)
 	gtp_esd_check_workqueue = create_workqueue("gtp_esd_check");
 #endif
 
+#if 0
 	if (tpselect == 1) {
 		lct_tp_register_flag = 1;
 	} else {
 		lct_tp_register_flag = 0;
 	}
+#endif
 	ret = i2c_add_driver(&goodix_ts_driver);
 	return ret;
 }
