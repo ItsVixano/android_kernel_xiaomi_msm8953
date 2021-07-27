@@ -55,6 +55,10 @@
 #define	FLASH_LED_UNLOCK_SECURE(base)				(base + 0xD0)
 #define FLASH_PERPH_RESET_CTRL(base)				(base + 0xDA)
 #define	FLASH_TORCH(base)					(base + 0xE4)
+#ifdef CONFIG_MACH_XIAOMI_YSL
+#define FLASH_TRIM1(base)					(base + 0xF1)
+#define FLASH_TRIM3(base)					(base + 0xF3)
+#endif
 
 #define FLASH_STATUS_REG_MASK					0xFF
 #define FLASH_LED_FAULT_STATUS(base)				(base + 0x08)
@@ -203,6 +207,9 @@ struct flash_led_platform_data {
 	unsigned int			temp_derate_curr_num;
 	unsigned int			*die_temp_derate_curr_ma;
 	unsigned int			*die_temp_threshold_degc;
+	#ifdef CONFIG_MACH_XIAOMI_YSL
+	u16 				max_total_current_limit;
+	#endif
 	u16				ramp_up_step;
 	u16				ramp_dn_step;
 	u16				vph_pwr_droop_threshold;
@@ -212,6 +219,10 @@ struct flash_led_platform_data {
 	u8				vph_pwr_droop_debounce_time;
 	u8				startup_dly;
 	u8				thermal_derate_rate;
+	#ifdef CONFIG_MACH_XIAOMI_YSL
+	u8				flash_trim1;
+	u8				flash_trim3;
+	#endif
 	bool				pmic_charger_support;
 	bool				self_check_en;
 	bool				thermal_derate_en;
@@ -1557,6 +1568,32 @@ static void qpnp_flash_led_work(struct work_struct *work)
 					(flash_node->prgm_current2 *
 					max_curr_avail_ma) / total_curr_ma;
 			}
+			#ifdef CONFIG_MACH_XIAOMI_YSL
+			if (led->pdata->flash_trim1 == 0) {
+				rc = regmap_read(led->regmap,
+							FLASH_TRIM1(led->base),
+							&temp);
+				led->pdata->flash_trim1 = val;
+			}
+
+			rc = qpnp_led_masked_write(led,
+					FLASH_LED_UNLOCK_SECURE(led->base),
+					FLASH_SECURE_MASK, FLASH_UNLOCK_SECURE);
+			if (rc) {
+				dev_err(&led->pdev->dev,
+						"Secure reg write failed\n");
+				goto exit_flash_led_work;
+			}
+
+			rc = qpnp_led_masked_write(led,
+					FLASH_TRIM1(led->base),
+					0xFF, (led->pdata->flash_trim1 + 10));
+			if (rc) {
+				dev_err(&led->pdev->dev,
+						"TRIM1 reg write failed\n");
+				goto exit_flash_led_work;
+			}
+			#endif
 
 			val = (u8)(flash_node->prgm_current *
 				FLASH_MAX_LEVEL / flash_node->max_current);
@@ -1567,6 +1604,32 @@ static void qpnp_flash_led_work(struct work_struct *work)
 					"Current register write failed\n");
 				goto exit_flash_led_work;
 			}
+			#ifdef CONFIG_MACH_XIAOMI_YSL
+			if (led->pdata->flash_trim3 == 0) {
+				rc = regmap_read(led->regmap,
+							FLASH_TRIM3(led->base),
+							&temp);
+				led->pdata->flash_trim3 = val;
+			}
+
+			rc = qpnp_led_masked_write(led,
+						FLASH_LED_UNLOCK_SECURE(led->base),
+						FLASH_SECURE_MASK, FLASH_UNLOCK_SECURE);
+			if (rc) {
+				dev_err(&led->pdev->dev,
+						"Secure reg write failed\n");
+				goto exit_flash_led_work;
+			}
+
+			rc = qpnp_led_masked_write(led,
+						FLASH_TRIM3(led->base),
+						0xFF, (led->pdata->flash_trim3 + 10));
+			if (rc) {
+				dev_err(&led->pdev->dev,
+						"TRIM3 reg write failed\n");
+				goto exit_flash_led_work;
+			}
+			#endif
 
 			val = (u8)(flash_node->prgm_current2 *
 				FLASH_MAX_LEVEL / flash_node->max_current);
@@ -1830,6 +1893,9 @@ static void qpnp_flash_led_brightness_set(struct led_classdev *led_cdev,
 {
 	struct flash_node_data *flash_node;
 	struct qpnp_flash_led *led;
+	#ifdef CONFIG_MACH_XIAOMI_YSL
+	u32 total_current;
+	#endif
 
 	flash_node = container_of(led_cdev, struct flash_node_data, cdev);
 	led = dev_get_drvdata(&flash_node->pdev->dev);
@@ -1864,6 +1930,15 @@ static void qpnp_flash_led_brightness_set(struct led_classdev *led_cdev,
 			if (!value) {
 				flash_node->prgm_current = 0;
 				flash_node->prgm_current2 = 0;
+				#ifdef CONFIG_MACH_XIAOMI_YSL
+				} else {
+				total_current = flash_node->prgm_current +
+						flash_node->prgm_current2;
+				if (total_current > led->pdata->max_total_current_limit) {
+					flash_node->prgm_current = (flash_node->prgm_current * led->pdata->max_total_current_limit) / total_current;
+					flash_node->prgm_current2 = (flash_node->prgm_current2 * led->pdata->max_total_current_limit) / total_current;
+				}
+				#endif
 			}
 		}
 	} else {
@@ -2202,6 +2277,10 @@ static int qpnp_flash_led_parse_common_dt(
 		return rc;
 	}
 
+#ifdef CONFIG_MACH_XIAOMI_YSL
+	led->pdata->flash_trim1 = 0;
+	led->pdata->flash_trim3  = 0;
+#endif
 	led->pdata->pmic_charger_support =
 			of_property_read_bool(node,
 						"qcom,pmic-charger-support");
@@ -2212,6 +2291,13 @@ static int qpnp_flash_led_parse_common_dt(
 	led->pdata->thermal_derate_en =
 			of_property_read_bool(node,
 						"qcom,thermal-derate-enabled");
+
+	#ifdef CONFIG_MACH_XIAOMI_YSL
+	led->pdata->max_total_current_limit = 2000;
+	rc = of_property_read_u32(node, "qcom,max-total-current-limit", &val);
+	if (!rc)
+		led->pdata->max_total_current_limit = (u16) val;
+	#endif
 
 	if (led->pdata->thermal_derate_en) {
 		led->pdata->thermal_derate_rate =
