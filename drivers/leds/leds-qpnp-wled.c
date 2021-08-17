@@ -443,7 +443,7 @@ module_param_named(
 	step_delay_gain, qpnp_wled_step_delay_gain, int, 0600
 );
 
-#ifdef CONFIG_MACH_XIAOMI_VINCE
+#if (defined CONFIG_MACH_XIAOMI_VINCE) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 static int first_set_prev_state = 0;
 #endif
 
@@ -1148,7 +1148,7 @@ static void qpnp_wled_work(struct work_struct *work)
 		}
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VINCE
+#if (defined CONFIG_MACH_XIAOMI_VINCE) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 	if (1 == first_set_prev_state) {
 		wled->prev_state = true;
 		first_set_prev_state = 0;
@@ -2770,7 +2770,7 @@ static int qpnp_wled_probe(struct platform_device *pdev)
 		return rc;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VINCE
+#if (defined CONFIG_MACH_XIAOMI_VINCE) || (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
 	if (strnstr(saved_command_line, "androidboot.mode=ffbm-01", strlen(saved_command_line)))
 		first_set_prev_state = 1;
 #endif
