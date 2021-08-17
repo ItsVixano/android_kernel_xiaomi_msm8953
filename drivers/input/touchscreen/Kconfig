@@ -1465,4 +1465,8 @@ source "drivers/input/touchscreen/td4310_e7/Kconfig"
 source "drivers/input/touchscreen/td4310_lansi_e7/Kconfig"
 source "drivers/input/touchscreen/vituralsar_e7/Kconfig"
 
+# sakura
+source "drivers/input/touchscreen/ft5446_sakura/Kconfig"
+source "drivers/input/touchscreen/gt917d_sakura/Kconfig"
+
 endif
