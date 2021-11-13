@@ -157,14 +157,25 @@ static inline void netlink_exit(void) {
 
 static inline int gf_parse_dts(struct gf_dev *gf_dev) {
 	struct device *dev = &gf_dev->spi->dev;
-	gf_dev->reset_gpio =
-		of_get_named_gpio(gf_dev->spi->dev.of_node, "goodix,gpio_reset", 0);
-	devm_gpio_request(dev, gf_dev->reset_gpio, "goodix,gpio_reset");
-	gpio_direction_output(gf_dev->reset_gpio, 1);
-	gf_dev->irq_gpio =
-		of_get_named_gpio(gf_dev->spi->dev.of_node, "goodix,gpio_irq", 0);
-	devm_gpio_request(dev, gf_dev->irq_gpio, "goodix,gpio_irq");
-	gpio_direction_input(gf_dev->irq_gpio);
+	#if (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
+		gf_dev->reset_gpio =
+			of_get_named_gpio(gf_dev->spi->dev.of_node, "fp-gpio-reset", 0);
+		devm_gpio_request(dev, gf_dev->reset_gpio, "goodix_reset");
+		gpio_direction_output(gf_dev->reset_gpio, 1);
+		gf_dev->irq_gpio =
+			of_get_named_gpio(gf_dev->spi->dev.of_node, "fp-gpio-irq", 0);
+		devm_gpio_request(dev, gf_dev->irq_gpio, "goodix_irq");
+		gpio_direction_input(gf_dev->irq_gpio);
+	#else
+		gf_dev->reset_gpio =
+			of_get_named_gpio(gf_dev->spi->dev.of_node, "goodix,gpio_reset", 0);
+		devm_gpio_request(dev, gf_dev->reset_gpio, "goodix,gpio_reset");
+		gpio_direction_output(gf_dev->reset_gpio, 1);
+		gf_dev->irq_gpio =
+			of_get_named_gpio(gf_dev->spi->dev.of_node, "goodix,gpio_irq", 0);
+		devm_gpio_request(dev, gf_dev->irq_gpio, "goodix,gpio_irq");
+		gpio_direction_input(gf_dev->irq_gpio);
+	#endif
 	return 0;
 }
 
