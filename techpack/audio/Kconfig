@@ -1,0 +1,3 @@
+config SND_SOC_MAX98927
+	tristate "SND_SOC_MAX98927"
+	default n
