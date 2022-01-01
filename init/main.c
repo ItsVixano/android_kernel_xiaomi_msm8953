@@ -478,10 +478,16 @@ static void __init mm_init(void)
 	kaiser_init();
 }
 
+#ifdef CONFIG_MACH_XIAOMI_YSL
+int fpsensor=1;
+#endif
 asmlinkage __visible void __init start_kernel(void)
 {
 	char *command_line;
 	char *after_dashes;
+	#ifdef CONFIG_MACH_XIAOMI_YSL
+	char *p=NULL;
+	#endif
 
 	set_task_stack_end_magic(&init_task);
 	smp_setup_processor_id();
@@ -515,8 +521,19 @@ asmlinkage __visible void __init start_kernel(void)
 	page_alloc_init();
 
 	pr_notice("Kernel command line: %s\n", boot_command_line);
+	#ifdef CONFIG_MACH_XIAOMI_YSL
+	p = NULL;
+	p= strstr(boot_command_line, "androidboot.fpsensor=fpc");
+	if(p) {
+		fpsensor = 1;//fpc fingerprint
+	} else {
+		fpsensor = 2;//goodix fingerprint
+	}
+	#else
 	/* parameters may set static keys */
 	jump_label_init();
+	#endif
+
 	parse_early_param();
 	after_dashes = parse_args("Booting kernel",
 				  static_command_line, __start___param,
