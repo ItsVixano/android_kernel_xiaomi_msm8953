@@ -46,7 +46,7 @@
 #include <linux/file.h>
 #include <linux/kthread.h>
 #include <linux/dma-buf.h>
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
+#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_YSL)
 #include <linux/mdss_io_util.h>
 #endif
 #include "mdss_fb.h"
@@ -2230,16 +2230,7 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
 
 	start = ktime_get();
 
-#ifdef CONFIG_MACH_XIAOMI_TISSOT
-	if ((info == prim_fbi) && (blank_mode == FB_BLANK_UNBLANK) &&
-		atomic_read(&prim_panel_is_on)) {
-		atomic_set(&prim_panel_is_on, false);
-		__pm_relax(&prim_panel_wakelock);
-		cancel_delayed_work_sync(&prim_panel_work);
-		return 0;
-	}
-#endif
-#ifdef CONFIG_MACH_XIAOMI_VINCE
+#if (defined CONFIG_MACH_XIAOMI_TISSOT) || (defined CONFIG_MACH_XIAOMI_VINCE) || (defined CONFIG_MACH_XIAOMI_YSL)
 	if ((info == prim_fbi) && (blank_mode == FB_BLANK_UNBLANK) &&
 		atomic_read(&prim_panel_is_on)) {
 		atomic_set(&prim_panel_is_on, false);
