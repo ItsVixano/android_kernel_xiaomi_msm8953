@@ -1,0 +1,2 @@
+source "drivers/input/fingerprint/common/fpc/Kconfig"
+source "drivers/input/fingerprint/common/goodix/Kconfig"

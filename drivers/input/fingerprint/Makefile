@@ -1,2 +1,5 @@
-obj-$(CONFIG_FINGERPRINT_FPC1020) += fpc/
-obj-$(CONFIG_FINGERPRINT_GOODIX_GF3208) += goodix/
+ifeq ($(CONFIG_MACH_XIAOMI_YSL),y)
+    obj-y += ysl/
+else
+    obj-y += common/
+endif
