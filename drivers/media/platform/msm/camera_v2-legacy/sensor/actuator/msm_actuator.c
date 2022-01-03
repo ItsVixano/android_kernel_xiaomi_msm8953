@@ -727,6 +727,12 @@ static int32_t msm_actuator_bivcm_move_focus(
 	if (dest_step_pos == a_ctrl->curr_step_pos)
 		return rc;
 
+#if (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
+	if (a_ctrl->step_position_table[dest_step_pos] ==
+	a_ctrl->step_position_table[a_ctrl->curr_step_pos])
+		return rc;
+#endif
+
 	if ((sign_dir > MSM_ACTUATOR_MOVE_SIGNED_NEAR) ||
 		(sign_dir < MSM_ACTUATOR_MOVE_SIGNED_FAR)) {
 		pr_err("Invalid sign_dir = %d\n", sign_dir);
