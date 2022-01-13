@@ -12494,7 +12494,9 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( ndev );
     hdd_context_t *pHddCtx;
     tCsrRoamProfile *pRoamProfile = NULL;
+#if !((defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_SAKURA))
     hdd_adapter_t  *pP2pAdapter = NULL;
+#endif
     eCsrRoamBssType LastBSSType;
     hdd_config_t *pConfig = NULL;
     eMib_dot11DesiredBssType connectedBssType;
@@ -12660,6 +12662,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                 {
                     wlan_hdd_cancel_existing_remain_on_channel(pAdapter);
                 }
+#if !((defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_SAKURA))
                if (NL80211_IFTYPE_AP == type)
                 {
                     /*
@@ -12683,6 +12686,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                          hdd_close_adapter(pHddCtx, pP2pAdapter, VOS_TRUE);
                      }
                 }
+#endif
 
                 //Disable IMPS & BMPS for SAP/GO
                 if(VOS_STATUS_E_FAILURE ==
@@ -12829,6 +12833,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
            case NL80211_IFTYPE_P2P_CLIENT:
            case NL80211_IFTYPE_ADHOC:
 
+#if !((defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_SAKURA))
                 if (pAdapter->device_mode == WLAN_HDD_SOFTAP
                         && !hdd_get_adapter(pHddCtx, WLAN_HDD_P2P_DEVICE)) {
                     /*
@@ -12839,6 +12844,7 @@ int __wlan_hdd_cfg80211_change_iface( struct wiphy *wiphy,
                                        "p2p%d", wlan_hdd_get_intf_addr(pHddCtx),
                                        VOS_TRUE);
                 }
+#endif
 
                 hdd_stop_adapter( pHddCtx, pAdapter, VOS_TRUE );
 

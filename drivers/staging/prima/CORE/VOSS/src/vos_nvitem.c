@@ -811,6 +811,31 @@ fail:
    return vosStatus;
 }
 
+#if (defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_SAKURA)
+VOS_STATUS get_mac_buf(char *pfileName,v_VOID_t *pCtx, char* mac, int len)
+{
+    int status;
+    VOS_STATUS retval = VOS_STATUS_SUCCESS;
+    hdd_context_t *pHddCtx = (hdd_context_t*)pCtx;
+    status = request_firmware(&pHddCtx->fw, pfileName, pHddCtx->parent_dev);
+    if(status || !pHddCtx->fw || !pHddCtx->fw->data) {
+        hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Firmware %s download failed",
+                __func__, pfileName);
+        retval = VOS_STATUS_E_FAILURE;
+    }
+    else {
+        memcpy(mac, (v_VOID_t *)pHddCtx->fw->data, len);
+        hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Firmware size",
+                        __func__);
+        /*hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Firmware size = %d",
+                __func__, pHddCtx->fw->size);*/
+
+        retval = VOS_STATUS_SUCCESS;
+    }
+    return retval;
+}
+#endif
+
 /**------------------------------------------------------------------------
   \brief vos_nv_parseV2bin() - Parse NV2 binary
          Parse NV2 BIN, and assign contents to common NV structure.
@@ -1162,6 +1187,9 @@ VOS_STATUS vos_nv_open(void)
     v_U32_t dataOffset;
     sHalNv *pnvData = NULL;
     hdd_context_t *pHddCtx = NULL;
+#if (defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_SAKURA)
+    char mac_buf[24];
+#endif
 
     /*Get the global context */
     pVosContext = vos_get_global_context(VOS_MODULE_ID_SYS, NULL);
@@ -1374,6 +1402,18 @@ VOS_STATUS vos_nv_open(void)
         /* NV verion is NV2 */
         ((VosContextType*)(pVosContext))->nvVersion = E_NV_V2;
     }
+
+#if (defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_SAKURA)
+    status = get_mac_buf("wlan/prima/wlan_mac.bin", ((VosContextType*)(pVosContext))->pHDDContext, mac_buf, sizeof(mac_buf));
+
+    if (VOS_IS_STATUS_SUCCESS( status ))
+    {
+        memcpy(gnvEFSTable->halnv.fields.macAddr, mac_buf, VOS_MAC_ADDRESS_LEN);
+        memcpy(gnvEFSTable->halnv.fields.macAddr2, mac_buf + VOS_MAC_ADDRESS_LEN, VOS_MAC_ADDRESS_LEN);
+        memcpy(gnvEFSTable->halnv.fields.macAddr3, mac_buf + VOS_MAC_ADDRESS_LEN * 2, VOS_MAC_ADDRESS_LEN);
+        memcpy(gnvEFSTable->halnv.fields.macAddr4, mac_buf + VOS_MAC_ADDRESS_LEN * 3, VOS_MAC_ADDRESS_LEN);
+    }
+#endif
 
     if (NULL != pnvData)
     {
