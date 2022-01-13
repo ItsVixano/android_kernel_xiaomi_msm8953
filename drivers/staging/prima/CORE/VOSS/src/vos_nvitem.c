@@ -1404,7 +1404,7 @@ VOS_STATUS vos_nv_open(void)
     }
 
 #if (defined CONFIG_MACH_XIAOMI_DAISY) || (defined CONFIG_MACH_XIAOMI_SAKURA)
-    status = get_mac_buf("wlan/prima/wlan_mac.bin", ((VosContextType*)(pVosContext))->pHDDContext, mac_buf, sizeof(mac_buf));
+    status = get_mac_buf("vendor/firmware/wlan/prima/wlan_mac.bin", ((VosContextType*)(pVosContext))->pHDDContext, mac_buf, sizeof(mac_buf));
 
     if (VOS_IS_STATUS_SUCCESS( status ))
     {
