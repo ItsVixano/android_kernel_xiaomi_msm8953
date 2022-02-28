@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2017, The Linux Foundation. All rights reserved.
- * Copyright (C) 2018 XiaoMi, Inc.
  *
  * Version: v1.0.0
  *
@@ -24,6 +23,10 @@
 #include <linux/slab.h>
 #include <linux/regulator/consumer.h>
 #include <linux/leds-aw2023.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <linux/uaccess.h>
 
 /* register address */
 #define AW2023_REG_RESET					0x00
@@ -78,8 +81,8 @@
 
 /* aw2023 register read/write access*/
 #define REG_NONE_ACCESS						0
-#define REG_RD_ACCESS						1 << 0
-#define REG_WR_ACCESS						1 << 1
+#define REG_RD_ACCESS						(1 << 0)
+#define REG_WR_ACCESS						(1 << 1)
 #define AW2023_REG_MAX						0x7F
 
 const unsigned char aw2023_reg_access[AW2023_REG_MAX] = {
@@ -105,6 +108,11 @@ const unsigned char aw2023_reg_access[AW2023_REG_MAX] = {
 	[AW2023_REG_LED2T2] = REG_RD_ACCESS|REG_WR_ACCESS,
 };
 
+#define AW2023_LED_PROC_FOLDER "aw2013_led"
+#define AW2023_LED_PROC_BRIGHTNESS_FILE "brightness"
+static struct i2c_client *aw2023_led_i2c_client;
+static struct proc_dir_entry *aw2023_led_proc_dir;
+static struct proc_dir_entry *aw2023_brightness;
 
 struct aw2023_led {
 	struct i2c_client *client;
@@ -125,10 +133,10 @@ static int aw2023_write(struct aw2023_led *led, u8 reg, u8 val)
 
 	do {
 		ret = i2c_smbus_write_byte_data(led->client, reg, val);
-		retry_times ++;
+		retry_times++;
 		if (retry_times == 5)
 			break;
-	}while (ret < 0);
+	} while (ret < 0);
 
 	return ret;
 }
@@ -137,12 +145,12 @@ static int aw2023_read(struct aw2023_led *led, u8 reg, u8 *val)
 {
 	int ret = -EINVAL, retry_times = 0;
 
-	do{
+	do {
 		ret = i2c_smbus_read_byte_data(led->client, reg);
-		retry_times ++;
+		retry_times++;
 		if (retry_times == 5)
 			break;
-	}while (ret < 0);
+	} while (ret < 0);
 	if (ret < 0)
 		return ret;
 
@@ -298,7 +306,7 @@ static void aw2023_brightness_work(struct work_struct *work)
 		if (led->cdev.brightness > led->cdev.max_brightness)
 			led->cdev.brightness = led->cdev.max_brightness;
 		aw2023_write(led, AW2023_REG_GCR2, led->pdata->imax);
-		aw2023_write(led, AW2023_REG_LCFG0 + led->id, 
+		aw2023_write(led, AW2023_REG_LCFG0 + led->id,
 					(AW2023_LED_MANUAL_MODE_MASK | led->pdata->led_current));
 		aw2023_write(led, AW2023_REG_PWM0 + led->id, led->cdev.brightness);
 		aw2023_read(led, AW2023_REG_LEDEN, &val);
@@ -315,7 +323,6 @@ static void aw2023_brightness_work(struct work_struct *work)
 	aw2023_read(led, AW2023_REG_LEDEN, &val);
 	if (val == 0) {
 		aw2023_write(led, AW2023_REG_GCR1, AW2023_CHIP_DISABLE_MASK);
-
 		if (aw2023_power_on(led->pdata->led, false)) {
 			dev_err(&led->pdata->led->client->dev,
 				"power off failed");
@@ -349,7 +356,7 @@ static void aw2023_led_blink_set(struct aw2023_led *led, unsigned long blinking)
 	led->cdev.brightness = blinking ? led->cdev.max_brightness : 0;
 	if (blinking > 0) {
 		aw2023_write(led, AW2023_REG_GCR2, led->pdata->imax);
-		aw2023_write(led, AW2023_REG_LCFG0 + led->id, 
+		aw2023_write(led, AW2023_REG_LCFG0 + led->id,
 					(AW2023_LED_BREATH_MODE_MASK | led->pdata->led_current));
 		aw2023_write(led, AW2023_REG_PWM0 + led->id, led->cdev.brightness);
 		aw2023_write(led, AW2023_REG_LED0T0 + led->id*3,
@@ -421,15 +428,15 @@ static ssize_t aw2023_led_time_show(struct device *dev,
 }
 
 static ssize_t status_show(struct device *dev,
-                                struct device_attribute *attr, char *buf)
+							struct device_attribute *attr, char *buf)
 {
 	u8 val = 0;
-        struct led_classdev *led_cdev = dev_get_drvdata(dev);
-        struct aw2023_led *led =
-                        container_of(led_cdev, struct aw2023_led, cdev);
-        aw2023_read(led, AW2023_REG_LEDEN, &val);
-        return snprintf(buf, PAGE_SIZE, "%d\n",
-                        val);
+		struct led_classdev *led_cdev = dev_get_drvdata(dev);
+		struct aw2023_led *led =
+						container_of(led_cdev, struct aw2023_led, cdev);
+		aw2023_read(led, AW2023_REG_LEDEN, &val);
+		return snprintf(buf, PAGE_SIZE, "%d\n",
+						val);
 }
 
 static ssize_t aw2023_led_time_store(struct device *dev,
@@ -494,8 +501,7 @@ static ssize_t aw2023_reg_store(struct device *dev,
 
 	unsigned int databuf[2];
 
-	if (2 == sscanf(buf, "%x %x", &databuf[0], &databuf[1]))
-	{
+	if (2 == sscanf(buf, "%x %x", &databuf[0], &databuf[1])) {
 		aw2023_write(led, (unsigned char)databuf[0], (unsigned char)databuf[1]);
 	}
 
@@ -522,10 +528,9 @@ static int aw2023_check_chipid(struct aw2023_led *led)
 	u8 val;
 	u8 cnt;
 
-	for (cnt = 5; cnt > 0; cnt --)
-	{
+	for (cnt = 5; cnt > 0; cnt--) {
 		aw2023_read(led, AW2023_REG_RESET, &val);
-		dev_notice(&led->client->dev,"aw2023 chip id %0x",val);
+		dev_notice(&led->client->dev, "aw2023 chip id %0x", val);
 		if (val == AW2023_CHIPID)
 			return 0;
 	}
@@ -687,6 +692,53 @@ free_err:
 	aw2023_led_err_handle(led_array, parsed_leds);
 	return rc;
 }
+static ssize_t aw2023_led_brightness_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
+{
+	char buf_tmp[6] = {0};
+	s32 ret = 0;
+	enum led_brightness	 brightness = LED_OFF;
+	struct aw2023_led *led = i2c_get_clientdata(aw2023_led_i2c_client);
+
+	if (copy_from_user(buf_tmp, buffer, count))
+		return -EFAULT;
+
+	if (strncmp(buf_tmp, "255", 3) == 0)
+		brightness = LED_FULL;
+	pr_err("%s buf_tmp %s\n", __func__, buf_tmp);
+	led->cdev.brightness = brightness;
+	schedule_work(&led->brightness_work);
+	ret = count;
+	return ret;
+
+}
+
+static const struct file_operations aw2023_led_brightness_ops = {
+	.owner = THIS_MODULE,
+	.read = seq_read,
+	.write = aw2023_led_brightness_write,
+};
+static int aw2023_led_proc_init(void)
+{
+	aw2023_led_proc_dir = proc_mkdir(AW2023_LED_PROC_FOLDER, NULL);
+	if (aw2023_led_proc_dir == NULL) {
+		pr_err(" %s: aw2023 dir file create failed!\n", __func__);
+		return -ENOMEM;
+	}
+
+	aw2023_brightness = proc_create(AW2023_LED_PROC_BRIGHTNESS_FILE,
+	0664, aw2023_led_proc_dir, &aw2023_led_brightness_ops);
+
+	if (aw2023_brightness == NULL) {
+		pr_err("%s:aw2023 brightness file create failed!\n", __func__);
+		goto fail_1;
+	}
+	return 0;
+fail_1:
+	remove_proc_entry(AW2023_LED_PROC_BRIGHTNESS_FILE, aw2023_brightness);
+	remove_proc_entry(AW2023_LED_PROC_FOLDER, NULL);
+	return -ENOMEM;
+}
 
 static int aw2023_led_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
@@ -708,7 +760,7 @@ static int aw2023_led_probe(struct i2c_client *client,
 	if (!led_array)
 		return -ENOMEM;
 
-
+	/* aw2023 i2c device addr */
 	client->addr = 0x45;
 
 	led_array->client = client;
@@ -723,14 +775,14 @@ static int aw2023_led_probe(struct i2c_client *client,
 	}
 
 	i2c_set_clientdata(client, led_array);
+	aw2023_led_i2c_client = client;
 
 	ret = aw2023_power_init(led_array, true);
 	if (ret) {
 		dev_err(&client->dev, "power init failed");
 		goto fail_parsed_node;
 	}
-	if (!led_array->poweron)
-	{
+	if (!led_array->poweron) {
 		ret = aw2023_power_on(led_array->pdata->led, true);
 		if (ret) {
 			dev_err(&client->dev, "AW2023 Probe power on fail\n");
@@ -744,6 +796,7 @@ static int aw2023_led_probe(struct i2c_client *client,
 		goto fail_parsed_node;
 	}
 
+	aw2023_led_proc_init();
 	return 0;
 
 fail_parsed_node:
@@ -768,6 +821,8 @@ static int aw2023_led_remove(struct i2c_client *client)
 		devm_kfree(&client->dev, led_array[i].pdata);
 		led_array[i].pdata = NULL;
 	}
+	remove_proc_entry(AW2023_LED_PROC_BRIGHTNESS_FILE, aw2023_brightness);
+	remove_proc_entry(AW2023_LED_PROC_FOLDER, NULL);
 	mutex_destroy(&led_array->lock);
 	devm_kfree(&client->dev, led_array);
 	led_array = NULL;
