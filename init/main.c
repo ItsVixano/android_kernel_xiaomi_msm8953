@@ -529,11 +529,9 @@ asmlinkage __visible void __init start_kernel(void)
 	} else {
 		fpsensor = 2;//goodix fingerprint
 	}
-	#else
+	#endif
 	/* parameters may set static keys */
 	jump_label_init();
-	#endif
-
 	parse_early_param();
 	after_dashes = parse_args("Booting kernel",
 				  static_command_line, __start___param,
