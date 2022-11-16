@@ -4661,13 +4661,7 @@ static int fg_power_get_property(struct power_supply *psy,
 #endif
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-#if defined (CONFIG_MACH_XIAOMI_TISSOT) | defined (CONFIG_MACH_XIAOMI_YSL)
-		val->intval = 3080000;
-#elif (defined CONFIG_MACH_XIAOMI_SAKURA) || (defined CONFIG_MACH_XIAOMI_DAISY)
-		val->intval = 4000000;
-#else
 		val->intval = chip->learning_data.learned_cc_uah;
-#endif
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
 		val->intval = chip->learning_data.cc_uah;
